@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="in.thelattice.gluconnect" >
+    package="com.basicdroid.app" >
 
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -12,13 +12,9 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme" >
+
         <activity
             android:name=".controllers.HomeActivity"
-            android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar" >
-        </activity>
-        <activity
-            android:name=".controllers.LoginActivity"
             android:label="Login"
             android:theme="@style/AppTheme.NoActionBar" >
             <intent-filter>
@@ -27,15 +23,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".controllers.PatientInsulinMonitoringActivity"
-            android:label="Login"
-            android:parentActivityName=".controllers.HomeActivity" >
-        </activity>
-        <activity
-            android:name=".controllers.SettingsActivity"
-            android:label="@string/title_activity_settings" >
-        </activity>
+
     </application>
 
 </manifest>

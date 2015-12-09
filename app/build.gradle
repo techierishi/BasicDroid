@@ -5,7 +5,7 @@ android {
     buildToolsVersion "23.0.0"
 
     defaultConfig {
-        applicationId "in.thelattice.gluconnect"
+        applicationId "com.basicdroid.app"
         minSdkVersion 15
         targetSdkVersion 23
         versionCode 1
@@ -30,6 +30,5 @@ dependencies {
     compile 'com.android.support:support-v4:23.0.1'
 
     compile 'com.squareup.picasso:picasso:2.5.2'
-    compile project(':dialogplus');
     compile project(':paperdb');
 }

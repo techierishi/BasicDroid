@@ -1,4 +1,4 @@
-package in.thelattice.gluconnect;
+package com.basicdroid.app;
 
 import org.junit.Test;
 
