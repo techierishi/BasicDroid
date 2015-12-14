@@ -1,4 +1,4 @@
-package com.basicdroid.app.controllers;
+package com.basicdroid.app.adapters;
 
 import android.app.Activity;
 import android.content.Context;
@@ -12,6 +12,7 @@ import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.NetworkImageView;
 import com.basicdroid.app.R;
 import com.basicdroid.app.application.MyApplication;
+import com.basicdroid.app.models.RowItem;
 
 import java.util.List;
 

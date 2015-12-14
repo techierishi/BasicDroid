@@ -8,6 +8,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.basicdroid.app.R;
+import com.basicdroid.app.adapters.CustomAdapter;
+import com.basicdroid.app.models.RowItem;
 
 import org.json.JSONArray;
 import org.json.JSONException;

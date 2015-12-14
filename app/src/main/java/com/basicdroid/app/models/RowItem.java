@@ -1,4 +1,4 @@
-package com.basicdroid.app.controllers;
+package com.basicdroid.app.models;
 
 public class RowItem {
 
