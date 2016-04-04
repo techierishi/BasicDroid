@@ -3,6 +3,7 @@ package com.basicdroid.app.controllers;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -11,12 +12,15 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.android.volley.NetworkResponse;
 import com.android.volley.Request.Method;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.basicdroid.app.R;
 import com.basicdroid.app.adapters.CustomAdapter;
+import com.basicdroid.app.libs.http.MultipartRequest;
+import com.basicdroid.app.libs.http.RequestUtil;
 import com.basicdroid.app.libs.http.VolleySingleton;
 import com.basicdroid.app.models.RowItem;
 
@@ -174,4 +178,37 @@ public class Forecast extends Activity {
 		VolleySingleton.getInstance().getRequestQueue().add(jsonObjReqq);
 
 	}
+
+
+	/**
+	 * Example function
+	 * @param context
+	 */
+	public void saveFilesToServer(final Context context) {
+		String url = "http://192.168.1.38/upload/upload.php";
+
+		List<MultipartRequest.NameAndValue> stringParams = new ArrayList<>();
+		stringParams.add(new MultipartRequest.NameAndValue("title", "Foo"));
+		stringParams.add(new MultipartRequest.NameAndValue("description", "Bar"));
+		List<MultipartRequest.FileParam> fileParams = new ArrayList<>();
+
+		fileParams.add(new MultipartRequest.FileParam("attachment", RequestUtil.getFileName("file//filepath"), RequestUtil.readFile("file//filepath")));
+
+
+		MultipartRequest multipartRequest = new MultipartRequest(url, null, stringParams, fileParams, new Response.Listener<NetworkResponse>() {
+			@Override
+			public void onResponse(NetworkResponse response) {
+				Toast.makeText(context, "Upload successfully! " + response.toString(), Toast.LENGTH_SHORT).show();
+			}
+		}, new Response.ErrorListener() {
+			@Override
+			public void onErrorResponse(VolleyError error) {
+				Toast.makeText(context, "Upload failed!\r\n" + error.toString(), Toast.LENGTH_SHORT).show();
+			}
+		});
+
+		VolleySingleton.getInstance().getRequestQueue().add(multipartRequest);
+	}
+
+
 }

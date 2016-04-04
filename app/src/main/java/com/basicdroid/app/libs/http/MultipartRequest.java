@@ -1,10 +1,7 @@
 package com.basicdroid.app.libs.http;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.support.v4.content.ContextCompat;
+import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
@@ -18,6 +15,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -116,13 +114,6 @@ public class MultipartRequest extends Request<NetworkResponse> {
         dataOutputStream.writeBytes(parameterValue + lineEnd);
     }
 
-    private byte[] getFileDataFromDrawable(Context context, int id) {
-        Drawable drawable = ContextCompat.getDrawable(context, id);
-        Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 0, byteArrayOutputStream);
-        return byteArrayOutputStream.toByteArray();
-    }
     protected byte[] create(List<NameAndValue> stringParams, List<FileParam> fileParams) {
         byte[] multipartBody = null;
 
@@ -176,4 +167,9 @@ public class MultipartRequest extends Request<NetworkResponse> {
         public String key;
         public String value;
     }
+
+
+
+
+
 }
