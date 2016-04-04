@@ -11,7 +11,7 @@ import android.widget.TextView;
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.NetworkImageView;
 import com.basicdroid.app.R;
-import com.basicdroid.app.application.MyApplication;
+import com.basicdroid.app.libs.http.VolleySingleton;
 import com.basicdroid.app.models.RowItem;
 
 import java.util.List;
@@ -20,7 +20,7 @@ public class CustomAdapter extends BaseAdapter {
 
 	Context context;
 	List<RowItem> rowItems;
-	ImageLoader imageLoader = MyApplication.getInstance().getImageLoader();
+	ImageLoader imageLoader = VolleySingleton.getInstance().getImageLoader();
 
 	public CustomAdapter(Context context, List<RowItem> rowItems) {
 

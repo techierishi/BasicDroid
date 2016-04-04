@@ -77,7 +77,7 @@ public class Post {
             //Post Data
             Map<String, String> nameValuePair = restBuilder.getPostValues();
 
-            System.out.println("\n Sending 'GET' request to URL : " + restBuilder.url);
+            System.out.println("\n Sending 'POST' request to URL : " + restBuilder.url);
             System.out.println("\n Response Code : " + nameValuePair);
 
 

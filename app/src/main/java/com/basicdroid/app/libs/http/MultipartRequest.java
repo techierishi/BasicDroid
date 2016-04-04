@@ -1,198 +1,179 @@
 package com.basicdroid.app.libs.http;
 
-import android.util.Log;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.support.v4.content.ContextCompat;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
+import com.android.volley.ParseError;
 import com.android.volley.Request;
 import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.HttpHeaderParser;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Created by Administrator on 8/29/2015.
  */
-public class MultipartRequest extends Request<String> {
+public class MultipartRequest extends Request<NetworkResponse> {
+    private final Response.Listener<NetworkResponse> mListener;
+    private final Response.ErrorListener mErrorListener;
+    private final Map<String, String> mHeaders;
+    private final byte[] mMultipartBody;
 
 
-    private static final String FILE_PART_NAME = "file_name";
-    private static final String STRING_PART_NAME = "text";
+    private final String twoHyphens = "--";
+    private final String lineEnd = "\r\n";
+    private final String boundary = "apiclient-" + System.currentTimeMillis();
+    private final String mMimeType = "multipart/form-data;boundary=" + boundary;
 
-    private final Response.Listener<String> mListener;
-    private File mFilePart;
-    private String mFilePath;
-
-    private HashMap<String, String> postData;
-
-
-    public MultipartRequest(String url, Response.ErrorListener errorListener, Response.Listener<String> listener, File file, HashMap<String, String> _postData) {
+    public MultipartRequest(String url, Map<String, String> headers, List<NameAndValue> stringParams, List<FileParam> fileParams, Response.Listener<NetworkResponse> listener, Response.ErrorListener errorListener) {
         super(Method.POST, url, errorListener);
+        this.mListener = listener;
+        this.mErrorListener = errorListener;
+        this.mHeaders = headers;
 
-        mListener = listener;
-        mFilePart = file;
-        postData = _postData;
 
+        this.mMultipartBody = create(stringParams,fileParams);
     }
 
-    public MultipartRequest(String url, Response.ErrorListener errorListener, Response.Listener<String> listener, String filePath, String stringPart) {
-        super(Method.POST, url, errorListener);
-
-        mListener = listener;
-        mFilePath = filePath;
-        mFilePart = new File(mFilePath);
+    @Override
+    public Map<String, String> getHeaders() throws AuthFailureError {
+        return (mHeaders != null) ? mHeaders : super.getHeaders();
     }
-
 
     @Override
     public String getBodyContentType() {
-        //String boundary = "*****";
-        String boundary = "===" + System.currentTimeMillis() + "===";
-        return "multipart/form-data;boundary=" + boundary;
+        return mMimeType;
     }
 
     @Override
     public byte[] getBody() throws AuthFailureError {
-
-        //return getEntityByteArray(mFilePart);
-        return getEntityByteArray();
+        return mMultipartBody;
     }
 
     @Override
-    protected Response<String> parseNetworkResponse(NetworkResponse response) {
-        return Response.success("Uploaded", getCacheEntry());
+    protected Response<NetworkResponse> parseNetworkResponse(NetworkResponse response) {
+        try {
+            return Response.success(
+                    response,
+                    HttpHeaderParser.parseCacheHeaders(response));
+        } catch (Exception e) {
+            return Response.error(new ParseError(e));
+        }
     }
 
     @Override
-    protected void deliverResponse(String response) {
+    protected void deliverResponse(NetworkResponse response) {
         mListener.onResponse(response);
     }
 
-    public byte[] getEntityByteArray() {
-        byte[] barr = null;
-        String charset = "UTF-8";
-
-        try {
-            MultipartByteArray multipart = new MultipartByteArray(charset);
-
-            multipart.addHeaderField("User-Agent", "CodeJava");
-            multipart.addHeaderField("Test-Header", "Header-Value");
-
-            Iterator it = postData.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry pair = (Map.Entry) it.next();
-                System.out.println(pair.getKey() + " = " + pair.getValue());
-                multipart.addFormField(pair.getKey()+"", "" + pair.getValue());
-                it.remove(); // avoids a ConcurrentModificationException
-            }
-
-
-            //multipart.addFormField("keywords", "Java,upload,Spring");
-
-            multipart.addFilePart("transporter_signature", mFilePart);
-
-            barr = multipart.finish();
-
-
-        } catch (IOException ex) {
-            System.err.println(ex);
-        }
-
-        return barr;
+    @Override
+    public void deliverError(VolleyError error) {
+        mErrorListener.onErrorResponse(error);
     }
 
-    public byte[] getEntityByteArray(File mFilePart) {
+    private void buildPart(DataOutputStream dataOutputStream, byte[] fileData, String fileNameKey, String fileName) throws IOException {
+        dataOutputStream.writeBytes(twoHyphens + boundary + lineEnd);
+        dataOutputStream.writeBytes("Content-Disposition: form-data; name=\"" + fileNameKey + "\"; filename=\""
+                + fileName + "\"" + lineEnd);
+        dataOutputStream.writeBytes(lineEnd);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        Log.e("Image filename", mFilePart.getAbsolutePath());
-        DataOutputStream outputStream = null;
+        ByteArrayInputStream fileInputStream = new ByteArrayInputStream(fileData);
+        int bytesAvailable = fileInputStream.available();
 
-        String pathToOurFile = mFilePart.getAbsolutePath();
-        String lineEnd = "\r\n";
-        String twoHyphens = "--";
-        String boundary = "*****";
+        int maxBufferSize = 1024 * 1024;
+        int bufferSize = Math.min(bytesAvailable, maxBufferSize);
+        byte[] buffer = new byte[bufferSize];
 
-        int bytesRead, bytesAvailable, bufferSize;
-        byte[] buffer;
-        int maxBufferSize = 1 * 1024;
-        try {
-            FileInputStream fileInputStream = new FileInputStream(mFilePart);
+        // read file and write it into form...
+        int bytesRead = fileInputStream.read(buffer, 0, bufferSize);
 
-            outputStream = new DataOutputStream(baos);
-
-            outputStream.writeBytes(twoHyphens + boundary + lineEnd);
-
-            String connstr = null;
-            connstr = "Content-Disposition: form-data; name=\"" + FILE_PART_NAME + "\";filename=\""
-                    + pathToOurFile + "\"" + lineEnd;
-            connstr += "Content-Type: application/octet-stream" + lineEnd;
-            Log.i("Connstr", connstr);
-
-            outputStream.writeBytes(connstr);
-            outputStream.writeBytes(lineEnd);
-
+        while (bytesRead > 0) {
+            dataOutputStream.write(buffer, 0, bufferSize);
             bytesAvailable = fileInputStream.available();
             bufferSize = Math.min(bytesAvailable, maxBufferSize);
-            buffer = new byte[bufferSize];
-
-            // Read file
             bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-            Log.e("Image length", bytesAvailable + "");
-            try {
-                while (bytesRead > 0) {
-                    try {
-                        outputStream.write(buffer, 0, bufferSize);
-                    } catch (OutOfMemoryError e) {
-                        e.printStackTrace();
-
-                        return null;
-                    }
-                    bytesAvailable = fileInputStream.available();
-                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-
-                return null;
-            }
-            outputStream.writeBytes(lineEnd);
-            outputStream.writeBytes(twoHyphens + boundary + twoHyphens
-                    + lineEnd);
-
-            String post_datas = null;
-            if (postData != null) {
-                for (String key : postData.keySet()) {
-
-                    post_datas = "Content-Disposition: form-data; name=\"" + key + "\"" + lineEnd + lineEnd;
-                    outputStream.writeBytes(post_datas);
-                    outputStream.writeBytes(postData.get(key));
-                    outputStream.writeBytes(lineEnd);
-                    outputStream.writeBytes(twoHyphens + boundary + twoHyphens
-                            + lineEnd);
-                }
-            }
-
-            Log.i("outputStream", outputStream.toString());
-
-            fileInputStream.close();
-            outputStream.flush();
-            outputStream.close();
-            outputStream = null;
-        } catch (Exception ex) {
-
-            Log.e("Send file Exception", ex.getMessage() + "");
-            ex.printStackTrace();
         }
-        String s = new String(baos.toByteArray());
-        Log.e("Byte Array : ", s + "");
 
-        return baos.toByteArray();
+        dataOutputStream.writeBytes(lineEnd);
+    }
+
+    private void buildTextPart(DataOutputStream dataOutputStream, String parameterName, String parameterValue) throws IOException {
+        dataOutputStream.writeBytes(twoHyphens + boundary + lineEnd);
+        dataOutputStream.writeBytes("Content-Disposition: form-data; name=\"" + parameterName + "\"" + lineEnd);
+        dataOutputStream.writeBytes("Content-Type: text/plain; charset=UTF-8" + lineEnd);
+        dataOutputStream.writeBytes(lineEnd);
+        dataOutputStream.writeBytes(parameterValue + lineEnd);
+    }
+
+    private byte[] getFileDataFromDrawable(Context context, int id) {
+        Drawable drawable = ContextCompat.getDrawable(context, id);
+        Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 0, byteArrayOutputStream);
+        return byteArrayOutputStream.toByteArray();
+    }
+    protected byte[] create(List<NameAndValue> stringParams, List<FileParam> fileParams) {
+        byte[] multipartBody = null;
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        try {
+
+            if(fileParams!=null && !fileParams.isEmpty()){
+                for (FileParam fileParam : fileParams) {
+                    buildPart(dos, fileParam.fileBytes, fileParam.fileKey, fileParam.fileName);
+                }
+            }
+
+            if(stringParams!=null && !stringParams.isEmpty()){
+                for (NameAndValue stringParam : stringParams) {
+                    buildTextPart(dos, stringParam.key, stringParam.value);
+                }
+            }
+
+            // send multipart form data necesssary after file data
+            dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+            // pass to multipart body
+            multipartBody = bos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return multipartBody;
+    }
+
+
+    public static class FileParam{
+
+        public FileParam(String fileKey, String fileName, byte[] fileBytes) {
+            this.fileKey = fileKey;
+            this.fileName = fileName;
+            this.fileBytes = fileBytes;
+        }
+
+        public String fileKey;
+        public String fileName;
+        public byte[]  fileBytes;
+    }
+
+    public static class NameAndValue {
+
+        public NameAndValue(String key, String value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public String key;
+        public String value;
     }
 }

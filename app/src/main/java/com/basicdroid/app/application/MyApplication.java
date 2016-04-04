@@ -1,59 +1,34 @@
 package com.basicdroid.app.application;
 
 import android.app.Application;
-
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.ImageLoader;
-import com.android.volley.toolbox.Volley;
-import com.basicdroid.app.controllers.BitmapLruCache;
+import android.content.Context;
+import android.util.Log;
 
 public class MyApplication extends Application {
 
-	private RequestQueue mRequestQueue;
-	private ImageLoader mImageLoader;
 	private static MyApplication mInstance;
+	private static Context mAppContext;
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
 		mInstance = this;
+		this.setAppContext(this);
 	}
 
 	public static synchronized MyApplication getInstance() {
-		return mInstance;
+		Log.d("App Controller", "" + mInstance);
+		if (mInstance != null)
+			return mInstance;
+		else
+			return mInstance = new MyApplication();
 	}
 
-	public RequestQueue getReqQueue() {
-		if (mRequestQueue == null) {
-			mRequestQueue = Volley.newRequestQueue(getApplicationContext());
-		}
 
-		return mRequestQueue;
+	public static Context getAppContext() {
+		return mAppContext;
 	}
-
-	public <T> void addToReqQueue(Request<T> req, String tag) {
-
-		getReqQueue().add(req);
-	}
-
-	public <T> void addToReqQueue(Request<T> req) {
-
-		getReqQueue().add(req);
-	}
-
-	public ImageLoader getImageLoader() {
-		getReqQueue();
-		if (mImageLoader == null) {
-			mImageLoader = new ImageLoader(this.mRequestQueue,
-					new BitmapLruCache());
-		}
-		return this.mImageLoader;
-	}
-
-	public void cancelPendingReq(Object tag) {
-		if (mRequestQueue != null) {
-			mRequestQueue.cancelAll(tag);
-		}
+	public void setAppContext(Context mAppContext) {
+		this.mAppContext = mAppContext;
 	}
 }

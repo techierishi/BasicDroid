@@ -17,7 +17,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.basicdroid.app.R;
 import com.basicdroid.app.adapters.CustomAdapter;
-import com.basicdroid.app.application.MyApplication;
+import com.basicdroid.app.libs.http.VolleySingleton;
 import com.basicdroid.app.models.RowItem;
 
 import org.json.JSONArray;
@@ -171,6 +171,7 @@ public class Forecast extends Activity {
 					}
 				});
 
-		MyApplication.getInstance().addToReqQueue(jsonObjReqq, "jreqq");
+		VolleySingleton.getInstance().getRequestQueue().add(jsonObjReqq);
+
 	}
 }
