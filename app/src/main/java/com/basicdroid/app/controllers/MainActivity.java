@@ -3,21 +3,23 @@ package com.basicdroid.app.controllers;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.android.volley.Request.Method;
+import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.NetworkImageView;
 import com.basicdroid.app.R;
 import com.basicdroid.app.libs.http.VolleySingleton;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,7 +32,7 @@ public class MainActivity extends Activity implements OnClickListener {
     Button btn, forecast_btn;
     TextView temp_tv, min_max_tv, desc_tv, place_tv;
     EditText et;
-    NetworkImageView iv;
+    ImageView iv;
 
     ProgressDialog PD;
 
@@ -54,7 +56,7 @@ public class MainActivity extends Activity implements OnClickListener {
         min_max_tv = (TextView) findViewById(R.id.min_max);
         desc_tv = (TextView) findViewById(R.id.desc);
 
-        iv = (NetworkImageView) findViewById(R.id.icon);
+        iv = (ImageView) findViewById(R.id.icon);
 
         btn.setOnClickListener(this);
 
@@ -64,7 +66,7 @@ public class MainActivity extends Activity implements OnClickListener {
 
         PD.show();
 
-        JsonObjectRequest jsonObjReq = new JsonObjectRequest(Method.GET,
+        JsonObjectRequest jsonObjReq = new JsonObjectRequest(Request.Method.GET,
                 full_url, null, new Response.Listener<JSONObject>() {
 
             @Override
@@ -81,9 +83,7 @@ public class MainActivity extends Activity implements OnClickListener {
                     temp = (int) (main.getDouble("temp") - 273.15);
                     temp_max = (int) (main.getDouble("temp_max") - 273.15);
                     temp_min = (int) (main.getDouble("temp_min") - 273.15);
-
                     JSONObject sys = response.getJSONObject("sys");
-
                     country = sys.getString("country");
 
                     JSONArray weather = response
@@ -93,14 +93,9 @@ public class MainActivity extends Activity implements OnClickListener {
 
                     description = jo.getString("description");
                     icon = jo.getString("icon");
-
                     // icon url
                     String icon_url = "http://openweathermap.org/img/w/"
                             + icon + ".png";
-
-                    ImageLoader imageLoader = VolleySingleton
-                            .getInstance().getImageLoader();
-
                     place_tv.setText(name + "," + country);
 
                     temp_tv.setText(temp + "\u2103");
@@ -108,7 +103,13 @@ public class MainActivity extends Activity implements OnClickListener {
                             + "\u2103");
                     desc_tv.setText(description);
 
-                    iv.setImageUrl(icon_url, imageLoader);
+
+                    ImageLoader imageLoader = ImageLoader.getInstance(); // Get singleton instance
+                    DisplayImageOptions userimgoptions = new DisplayImageOptions.Builder()
+                            .showImageOnLoading(android.R.color.transparent)
+                            .cacheInMemory(true).cacheOnDisc(true)
+                            .bitmapConfig(Bitmap.Config.RGB_565).build();
+                    imageLoader.displayImage(icon_url, iv, userimgoptions);
 
                     forecast_btn.setVisibility(View.VISIBLE);
 
@@ -129,7 +130,6 @@ public class MainActivity extends Activity implements OnClickListener {
         });
 
         VolleySingleton.getInstance().getRequestQueue().add(jsonObjReq);
-
 
     }
 

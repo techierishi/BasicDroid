@@ -13,7 +13,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.android.volley.NetworkResponse;
-import com.android.volley.Request.Method;
+import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
@@ -31,184 +31,178 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class Forecast extends Activity {
 
-	String forecast_url = "http://api.openweathermap.org/data/2.5/forecast?&appid=cd50922557b3102188ce5521a3f42866&id=";
+    String forecast_url = "http://api.openweathermap.org/data/2.5/forecast?&appid=cd50922557b3102188ce5521a3f42866&id=";
 
-	ProgressDialog PD;
+    ProgressDialog PD;
 
-	ListView lv;
-	CustomAdapter adapter;
-	List<RowItem> rowItems = new ArrayList<RowItem>();
+    ListView lv;
+    CustomAdapter adapter;
+    List<RowItem> rowItems = new ArrayList<RowItem>();
 
-	String place_id, place_name;
+    String place_id, place_name;
 
-	JSONObject mJsonObj;
+    JSONObject mJsonObj;
 
-	@SuppressLint("NewApi")
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
+    @SuppressLint("NewApi")
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.forecast);
+        lv = (ListView) findViewById(R.id.flv);
+        Intent i = getIntent();
+        place_id = i.getExtras().getString("id");
+        place_name = i.getExtras().getString("name");
 
-		super.onCreate(savedInstanceState);
+        //getActionBar().setSubtitle(place_name);
 
-		setContentView(R.layout.forecast);
+        PD = new ProgressDialog(Forecast.this);
+        PD.setMessage("Loading.....");
+        PD.setCancelable(false);
 
-		lv = (ListView) findViewById(R.id.flv);
+        String full_url = forecast_url + place_id;
 
-		Intent i = getIntent();
-		place_id = i.getExtras().getString("id");
-		place_name = i.getExtras().getString("name");
+        adapter = new CustomAdapter(getApplicationContext(), rowItems);
+        lv.setAdapter(adapter);
+        lv.setOnItemClickListener(new OnItemClickListener() {
 
-		//getActionBar().setSubtitle(place_name);
+            @Override
+            public void onItemClick(AdapterView<?> arg0, View arg1,
+                                    int position, long id) {
+                Toast.makeText(
+                        getApplicationContext(),
+                        "Id: " + place_id + "Date: "
+                                + rowItems.get(position).getMdate(),
+                        Toast.LENGTH_LONG).show();
 
-		PD = new ProgressDialog(Forecast.this);
-		PD.setMessage("Loading.....");
-		PD.setCancelable(false);
+                Intent i = new Intent(getApplicationContext(), Interval.class);
 
-		String full_url = forecast_url + place_id;
+                i.putExtra("placeid", place_id);
+                i.putExtra("name", place_name);
 
-		adapter = new CustomAdapter(getApplicationContext(), rowItems);
-		lv.setAdapter(adapter);
+                i.putExtra("mDate", rowItems.get(position).getMdate());
+                i.putExtra("jo", mJsonObj.toString());
 
-		lv.setOnItemClickListener(new OnItemClickListener() {
+                startActivity(i);
 
-			@Override
-			public void onItemClick(AdapterView<?> arg0, View arg1,
-					int position, long id) {
+            }
+        });
 
-				Toast.makeText(
-						getApplicationContext(),
-						"Id: " + place_id + "Date: "
-								+ rowItems.get(position).getMdate(),
-						Toast.LENGTH_LONG).show();
+        makejsonreq(full_url);
 
-				Intent i = new Intent(getApplicationContext(), Interval.class);
+    }
 
-				i.putExtra("placeid", place_id);
-				i.putExtra("name", place_name);
+    public void makejsonreq(String url) {
 
-				i.putExtra("mDate", rowItems.get(position).getMdate());
-				i.putExtra("jo", mJsonObj.toString());
+        PD.show();
+        JsonObjectRequest jsonObjReqq = new JsonObjectRequest(Request.Method.GET, url,
+                null, new Response.Listener<JSONObject>() {
 
-				startActivity(i);
+            @Override
+            public void onResponse(JSONObject response) {
+                mJsonObj = response;
+                try {
+                    JSONArray jlist = response.getJSONArray("list");
 
-			}
-		});
+                    String dt = null;
+                    String pre_dt = null;
 
-		makejsonreq(full_url);
+                    for (int i = 0; i < jlist.length(); i++) {
+                        dt = jlist.getJSONObject(i).getString("dt_txt")
+                                .substring(8, 10);
 
-	}
+                        if (i > 1 || i == 1) {
+                            pre_dt = jlist.getJSONObject(i - 1)
+                                    .getString("dt_txt")
+                                    .substring(8, 10);
 
-	public void makejsonreq(String url) {
+                            if (!(dt.equals(pre_dt))) {
 
-		PD.show();
-		JsonObjectRequest jsonObjReqq = new JsonObjectRequest(Method.GET, url,
-				null, new Response.Listener<JSONObject>() {
+                                String mdate = jlist.getJSONObject(i)
+                                        .getString("dt_txt")
+                                        .substring(0, 10);
 
-					@Override
-					public void onResponse(JSONObject response) {
-						mJsonObj = response;
-						try {
-							JSONArray jlist = response.getJSONArray("list");
+                                JSONObject main = jlist
+                                        .getJSONObject(i)
+                                        .getJSONObject("main");
 
-							String dt = null;
-							String pre_dt = null;
+                                int temp, temp_max, temp_min;
 
-							for (int i = 0; i < jlist.length(); i++) {
-								dt = jlist.getJSONObject(i).getString("dt_txt")
-										.substring(8, 10);
+                                temp = (int) (main.getDouble("temp") - 273.15);
+                                temp_max = (int) (main
+                                        .getDouble("temp_max") - 273.15);
+                                temp_min = (int) (main
+                                        .getDouble("temp_min") - 273.15);
 
-								if (i > 1 || i == 1) {
-									pre_dt = jlist.getJSONObject(i - 1)
-											.getString("dt_txt")
-											.substring(8, 10);
+                                JSONArray weather = jlist
+                                        .getJSONObject(i).getJSONArray(
+                                                "weather");
 
-									if (!(dt.equals(pre_dt))) {
+                                String icon = weather.getJSONObject(0)
+                                        .getString("icon");
+                                String description = weather
+                                        .getJSONObject(0).getString(
+                                                "description");
 
-										String mdate = jlist.getJSONObject(i)
-												.getString("dt_txt")
-												.substring(0, 10);
+                                RowItem rItem = new RowItem(temp,
+                                        temp_max, temp_min,
+                                        description, icon, mdate);
 
-										JSONObject main = jlist
-												.getJSONObject(i)
-												.getJSONObject("main");
+                                rowItems.add(rItem);
+                            } // if end
+                        } // if end
+                    } // for end
 
-										int temp, temp_max, temp_min;
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    PD.dismiss();
+                }
+                adapter.notifyDataSetChanged();
+                PD.dismiss();
+            }
+        }, new Response.ErrorListener() {
 
-										temp = (int) (main.getDouble("temp") - 273.15);
-										temp_max = (int) (main
-												.getDouble("temp_max") - 273.15);
-										temp_min = (int) (main
-												.getDouble("temp_min") - 273.15);
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                PD.dismiss();
+            }
+        });
 
-										JSONArray weather = jlist
-												.getJSONObject(i).getJSONArray(
-														"weather");
+        VolleySingleton.getInstance().getRequestQueue().add(jsonObjReqq);
 
-										String icon = weather.getJSONObject(0)
-												.getString("icon");
-										String description = weather
-												.getJSONObject(0).getString(
-														"description");
-
-										RowItem rItem = new RowItem(temp,
-												temp_max, temp_min,
-												description, icon, mdate);
-
-										rowItems.add(rItem);
-									} // if end
-								} // if end
-							} // for end
-
-						} catch (JSONException e) {
-							e.printStackTrace();
-							PD.dismiss();
-						}
-						adapter.notifyDataSetChanged();
-						PD.dismiss();
-					}
-				}, new Response.ErrorListener() {
-
-					@Override
-					public void onErrorResponse(VolleyError error) {
-						PD.dismiss();
-					}
-				});
-
-		VolleySingleton.getInstance().getRequestQueue().add(jsonObjReqq);
-
-	}
+    }
 
 
-	/**
-	 * Example function
-	 * @param context
-	 */
-	public void saveFilesToServer(final Context context) {
-		String url = "http://192.168.1.38/upload/upload.php";
+    /**
+     * Example function
+     * @param context
+     */
+    public void saveFilesToServer(final Context context) {
+        String url = "http://192.168.1.38/upload/upload.php";
 
-		List<MultipartRequest.NameAndValue> stringParams = new ArrayList<>();
-		stringParams.add(new MultipartRequest.NameAndValue("title", "Foo"));
-		stringParams.add(new MultipartRequest.NameAndValue("description", "Bar"));
-		List<MultipartRequest.FileParam> fileParams = new ArrayList<>();
+        List<MultipartRequest.NameAndValue> stringParams = new ArrayList<>();
+        stringParams.add(new MultipartRequest.NameAndValue("title", "Foo"));
+        stringParams.add(new MultipartRequest.NameAndValue("description", "Bar"));
+        List<MultipartRequest.FileParam> fileParams = new ArrayList<>();
 
-		fileParams.add(new MultipartRequest.FileParam("attachment", RequestUtil.getFileName("file//filepath"), RequestUtil.readFile("file//filepath")));
+        fileParams.add(new MultipartRequest.FileParam("attachment", RequestUtil.getFileName("file//filepath"), RequestUtil.readFile("file//filepath")));
 
 
-		MultipartRequest multipartRequest = new MultipartRequest(url, null, stringParams, fileParams, new Response.Listener<NetworkResponse>() {
-			@Override
-			public void onResponse(NetworkResponse response) {
-				Toast.makeText(context, "Upload successfully! " + response.toString(), Toast.LENGTH_SHORT).show();
-			}
-		}, new Response.ErrorListener() {
-			@Override
-			public void onErrorResponse(VolleyError error) {
-				Toast.makeText(context, "Upload failed!\r\n" + error.toString(), Toast.LENGTH_SHORT).show();
-			}
-		});
+        MultipartRequest multipartRequest = new MultipartRequest(url, null, stringParams, fileParams, new Response.Listener<NetworkResponse>() {
+            @Override
+            public void onResponse(NetworkResponse response) {
+                Toast.makeText(context, "Upload successfully! " + response.toString(), Toast.LENGTH_SHORT).show();
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(context, "Upload failed!\r\n" + error.toString(), Toast.LENGTH_SHORT).show();
+            }
+        });
 
-		VolleySingleton.getInstance().getRequestQueue().add(multipartRequest);
-	}
-
+        VolleySingleton.getInstance().getRequestQueue().add(multipartRequest);
+    }
 
 }
