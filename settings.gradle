@@ -1,1 +1,1 @@
-include ':paperdb',':app'
+include ':app'
