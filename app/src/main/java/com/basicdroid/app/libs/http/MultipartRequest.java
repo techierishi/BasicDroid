@@ -1,5 +1,7 @@
 package com.basicdroid.app.libs.http;
 
+import android.text.TextUtils;
+
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
@@ -11,15 +13,20 @@ import com.android.volley.toolbox.HttpHeaderParser;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by Administrator on 8/29/2015.
  */
-public class MultipartRequest extends Request<NetworkResponse> {
-    private final Response.Listener<NetworkResponse> mListener;
+public class MultipartRequest extends Request<String> {
+    private final Response.Listener<String> mListener;
     private final Response.ErrorListener mErrorListener;
     private final Map<String, String> mHeaders;
     private final byte[] mMultipartBody;
@@ -30,14 +37,24 @@ public class MultipartRequest extends Request<NetworkResponse> {
     private final String boundary = "apiclient-" + System.currentTimeMillis();
     private final String mMimeType = "multipart/form-data;boundary=" + boundary;
 
-    public MultipartRequest(String url, Map<String, String> headers, List<NameAndValue> stringParams, List<FileParam> fileParams, Response.Listener<NetworkResponse> listener, Response.ErrorListener errorListener) {
+    public MultipartRequest(String url, Map<String, String> headers, Map<String, String> stringParams, List<FileParam> fileParams, Response.Listener<String> listener, Response.ErrorListener errorListener) {
         super(Method.POST, url, errorListener);
         this.mListener = listener;
         this.mErrorListener = errorListener;
         this.mHeaders = headers;
 
 
-        this.mMultipartBody = create(stringParams,fileParams);
+        this.mMultipartBody = create(stringParams, fileParams);
+    }
+
+    public MultipartRequest(String url, Map<String, String> stringParams, Response.Listener<String> listener, Response.ErrorListener errorListener) {
+        super(Method.POST, url, errorListener);
+        this.mListener = listener;
+        this.mErrorListener = errorListener;
+        this.mHeaders = null;
+
+
+        this.mMultipartBody = create(stringParams, null);
     }
 
     @Override
@@ -56,20 +73,26 @@ public class MultipartRequest extends Request<NetworkResponse> {
     }
 
     @Override
-    protected Response<NetworkResponse> parseNetworkResponse(NetworkResponse response) {
+    protected Response<String> parseNetworkResponse(NetworkResponse response) {
+        String parsed = null;
         try {
-            return Response.success(
-                    response,
-                    HttpHeaderParser.parseCacheHeaders(response));
+            parsed = new String(response.data);
         } catch (Exception e) {
-            return Response.error(new ParseError(e));
+            e.printStackTrace();
+        } finally {
+            if (TextUtils.isEmpty(parsed)) {
+                parsed = "";
+            }
         }
+
+        return Response.success(parsed, HttpHeaderParser.parseCacheHeaders(response));
     }
 
     @Override
-    protected void deliverResponse(NetworkResponse response) {
+    protected void deliverResponse(String response) {
         mListener.onResponse(response);
     }
+
 
     @Override
     public void deliverError(VolleyError error) {
@@ -110,22 +133,24 @@ public class MultipartRequest extends Request<NetworkResponse> {
         dataOutputStream.writeBytes(parameterValue + lineEnd);
     }
 
-    protected byte[] create(List<NameAndValue> stringParams, List<FileParam> fileParams) {
+    protected byte[] create(Map<String, String> stringParams, List<FileParam> fileParams) {
         byte[] multipartBody = null;
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         try {
-
-            if(fileParams!=null && !fileParams.isEmpty()){
+            if (fileParams != null && !fileParams.isEmpty()) {
                 for (FileParam fileParam : fileParams) {
                     buildPart(dos, fileParam.fileBytes, fileParam.fileKey, fileParam.fileName);
                 }
             }
 
-            if(stringParams!=null && !stringParams.isEmpty()){
-                for (NameAndValue stringParam : stringParams) {
-                    buildTextPart(dos, stringParam.key, stringParam.value);
+            if (stringParams != null && !stringParams.isEmpty()) {
+                Set<Map.Entry<String, String>> entries = stringParams.entrySet();
+                //loop a Map
+                for (Map.Entry<String, String> entry : entries) {
+                    System.out.println("" + entry.getKey() + " : " + entry.getValue());
+                    buildTextPart(dos, entry.getKey(), entry.getValue());
                 }
             }
 
@@ -140,7 +165,7 @@ public class MultipartRequest extends Request<NetworkResponse> {
     }
 
 
-    public static class FileParam{
+    public static class FileParam {
 
         public FileParam(String fileKey, String fileName, byte[] fileBytes) {
             this.fileKey = fileKey;
@@ -150,22 +175,7 @@ public class MultipartRequest extends Request<NetworkResponse> {
 
         public String fileKey;
         public String fileName;
-        public byte[]  fileBytes;
+        public byte[] fileBytes;
     }
-
-    public static class NameAndValue {
-
-        public NameAndValue(String key, String value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        public String key;
-        public String value;
-    }
-
-
-
-
 
 }

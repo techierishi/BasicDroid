@@ -29,7 +29,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 public class Forecast extends Activity {
@@ -177,22 +179,24 @@ public class Forecast extends Activity {
 
     /**
      * Example function
+     *
      * @param context
      */
     public void saveFilesToServer(final Context context) {
         String url = "http://192.168.1.38/upload/upload.php";
 
-        List<MultipartRequest.NameAndValue> stringParams = new ArrayList<>();
-        stringParams.add(new MultipartRequest.NameAndValue("title", "Foo"));
-        stringParams.add(new MultipartRequest.NameAndValue("description", "Bar"));
+
+        Map<String, String> stringParams = new HashMap<>();
+        stringParams.put("title", "Foo");
+        stringParams.put("description", "Bar");
         List<MultipartRequest.FileParam> fileParams = new ArrayList<>();
 
         fileParams.add(new MultipartRequest.FileParam("attachment", RequestUtil.getFileName("file//filepath"), RequestUtil.readFile("file//filepath")));
 
 
-        MultipartRequest multipartRequest = new MultipartRequest(url, null, stringParams, fileParams, new Response.Listener<NetworkResponse>() {
+        MultipartRequest multipartRequest = new MultipartRequest(url, null, stringParams, fileParams, new Response.Listener<String>() {
             @Override
-            public void onResponse(NetworkResponse response) {
+            public void onResponse(String response) {
                 Toast.makeText(context, "Upload successfully! " + response.toString(), Toast.LENGTH_SHORT).show();
             }
         }, new Response.ErrorListener() {
